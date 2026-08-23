@@ -1,0 +1,7 @@
+services:
+  api:
+    gpus: all
+
+  ollama:
+    gpus: all
+

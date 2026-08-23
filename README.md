@@ -2,6 +2,119 @@
 
 A lightweight, self-hosted LLM node that turns your local AI models into a secure, configurable API for your applications and microservices.
 
+## v0.1 quick start
+
+The first runnable version provides a FastAPI service, an internal Ollama
+backend and three typed endpoints:
+
+```text
+GET /health
+GET /model_list
+GET /machine_info
+```
+
+Prepare the project and start the CPU-compatible base stack:
+
+```bash
+./install.sh
+./run.sh
+```
+
+Run it in the background by passing the usual Compose option:
+
+```bash
+./run.sh -d
+```
+
+The API is then available at `http://localhost:8088`, with interactive OpenAPI
+documentation at `http://localhost:8088/docs`. Ollama is intentionally reachable
+only from the internal Compose network. FastAPI is bound to `127.0.0.1` by
+default because v0.1 does not provide authentication yet.
+
+To use NVIDIA GPUs, install the NVIDIA Container Toolkit and apply the included
+override (Docker Compose 2.30 or newer):
+
+```bash
+./run.sh --nvidia
+```
+
+No model is downloaded automatically. This keeps the initial setup small and
+leaves model choice explicit:
+
+```bash
+docker compose exec ollama ollama pull llama3.2:1b
+curl http://localhost:8088/model_list
+```
+
+The host port can be changed without editing the Compose file:
+
+```bash
+LOCAL_LLM_NODE_PORT=8181 ./run.sh
+```
+
+To make the API reachable from other machines on a trusted network, explicitly
+change the bind address. Do not expose this unauthenticated version directly to
+the internet:
+
+```bash
+LOCAL_LLM_NODE_HOST=0.0.0.0 ./run.sh
+```
+
+At the start of v0.1, the following easy-to-remember ports were verified as
+available on the development machine: `8000`, `8080`, `8088`, `8181`, `8888`
+and `11434`. Port availability can change whenever another service starts;
+`8088` is the project default because it is memorable and less commonly used
+than `8000` or `8080`.
+
+### API responses
+
+`GET /health` always describes both layers. It returns `ok` when Ollama is
+available and `degraded` when FastAPI is running but Ollama cannot be reached:
+
+```json
+{
+  "status": "ok",
+  "service": "local-llm-node",
+  "version": "0.1.0",
+  "backend": {
+    "name": "ollama",
+    "status": "available",
+    "version": "0.12.6"
+  }
+}
+```
+
+`GET /model_list` returns the models registered in Ollama and responds with
+HTTP `503` if the backend is unavailable:
+
+```json
+{
+  "models": [],
+  "count": 0
+}
+```
+
+`GET /machine_info` returns the operating system, CPU, RAM and the NVIDIA GPUs
+visible to the API process. GPU discovery uses `nvidia-smi`; the base CPU stack
+therefore returns an empty `gpus` list. The NVIDIA override makes GPUs visible
+to both FastAPI and Ollama.
+
+### Local development
+
+Install the project and development tools, then run the checks:
+
+```bash
+uv sync --extra dev
+uv run pytest
+uv run ruff check .
+```
+
+Start FastAPI outside Docker with:
+
+```bash
+OLLAMA_URL=http://localhost:11434 uv run uvicorn local_llm_node.main:app --reload
+```
+
 ## What is Local LLM Node?
 
 Local LLM Node is a small self-hosted service designed to make running local Large Language Models easier.
@@ -276,9 +389,7 @@ This keeps the API independent from the inference runtime.
 
 ## Docker
 
-The project is designed to run as a containerized service.
-
-A typical deployment may look like:
+The included Compose stack has two services:
 
 ```text
 Docker Compose
@@ -290,30 +401,6 @@ Docker Compose
       └── GPU
 ```
 
-Example:
-
-```yaml
-services:
-
-  local-llm-node:
-    image: local-llm-node
-    ports:
-      - "8000:8000"
-    environment:
-      OLLAMA_URL: http://ollama:11434
-    depends_on:
-      - ollama
-
-  ollama:
-    image: ollama/ollama
-    volumes:
-      - ./models:/models
-      - ollama_data:/root/.ollama
-
-volumes:
-  ollama_data:
-```
-
 Only Local LLM Node needs to be exposed to the rest of the infrastructure.
 
 The underlying inference backend can remain on the internal Docker network.
@@ -322,7 +409,7 @@ The underlying inference backend can remain on the internal Docker network.
 Applications
      │
      ▼
-Local LLM Node :8000
+Local LLM Node :8088
      │
      ▼
 Ollama :11434
@@ -392,17 +479,15 @@ Ollama directly
 
 ### v0.1
 
-* FastAPI service
-* Docker image
-* Ollama backend
-* OpenAI-compatible chat endpoint
-* Model listing
-* Basic admin interface
-* CPU/RAM/GPU discovery
-* Health checks
+* FastAPI service and Docker image
+* Docker Compose stack with an internal Ollama backend
+* Typed health, model-list and machine-info endpoints
+* CPU/RAM and optional NVIDIA GPU discovery
 
 ### v0.2
 
+* OpenAI-compatible chat endpoint
+* Basic admin interface
 * API keys
 * Audit logging
 * Model compatibility estimation

@@ -1,0 +1,42 @@
+name: local-llm-node
+
+services:
+  api:
+    build:
+      context: .
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_TIMEOUT_SECONDS: "3"
+    ports:
+      - "${LOCAL_LLM_NODE_HOST:-127.0.0.1}:${LOCAL_LLM_NODE_PORT:-8088}:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:8000/health', timeout=2)
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
