@@ -4,9 +4,11 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from local_llm_node import __version__
 from local_llm_node.backends.base import InferenceBackend
-from local_llm_node.exceptions import BackendUnavailableError
+from local_llm_node.exceptions import BackendUnavailableError, ModelNotFoundError
 from local_llm_node.machine import discover_machine_info
 from local_llm_node.schemas import (
+    GenerateRequest,
+    GenerateResponse,
     HealthResponse,
     MachineInfoResponse,
     ModelListResponse,
@@ -48,6 +50,34 @@ async def model_list(request: Request) -> ModelListResponse:
             detail=str(error),
         ) from error
     return ModelListResponse(models=models, count=len(models))
+
+
+@router.post(
+    "/generate",
+    response_model=GenerateResponse,
+    responses={
+        404: {"description": "Requested model not found"},
+        503: {"description": "Inference backend unavailable"},
+    },
+    tags=["inference"],
+)
+async def generate(
+    generation_request: GenerateRequest,
+    request: Request,
+) -> GenerateResponse:
+    """Generate one complete answer for a prompt."""
+    try:
+        return await _get_backend(request).generate(generation_request)
+    except ModelNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except BackendUnavailableError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
 
 
 @router.get(

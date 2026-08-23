@@ -10,6 +10,7 @@ class Settings:
 
     ollama_url: str = "http://localhost:11434"
     ollama_timeout_seconds: float = 3.0
+    ollama_generate_timeout_seconds: float = 120.0
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -20,6 +21,12 @@ class Settings:
                 os.getenv(
                     "OLLAMA_TIMEOUT_SECONDS",
                     str(cls.ollama_timeout_seconds),
+                )
+            ),
+            ollama_generate_timeout_seconds=float(
+                os.getenv(
+                    "OLLAMA_GENERATE_TIMEOUT_SECONDS",
+                    str(cls.ollama_generate_timeout_seconds),
                 )
             ),
         )

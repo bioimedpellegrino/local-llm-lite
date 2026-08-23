@@ -7,6 +7,7 @@ services:
     environment:
       OLLAMA_URL: http://ollama:11434
       OLLAMA_TIMEOUT_SECONDS: "3"
+      OLLAMA_GENERATE_TIMEOUT_SECONDS: "120"
     ports:
       - "${LOCAL_LLM_NODE_HOST:-127.0.0.1}:${LOCAL_LLM_NODE_PORT:-8088}:8000"
     depends_on:

@@ -2,7 +2,12 @@
 
 from abc import ABC, abstractmethod
 
-from local_llm_node.schemas import BackendHealth, Model
+from local_llm_node.schemas import (
+    BackendHealth,
+    GenerateRequest,
+    GenerateResponse,
+    Model,
+)
 
 
 class InferenceBackend(ABC):
@@ -15,3 +20,7 @@ class InferenceBackend(ABC):
     @abstractmethod
     async def list_models(self) -> list[Model]:
         """Return the models available through the backend."""
+
+    @abstractmethod
+    async def generate(self, request: GenerateRequest) -> GenerateResponse:
+        """Generate one non-streaming response for a prompt."""

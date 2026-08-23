@@ -51,6 +51,21 @@ class ModelListResponse(BaseModel):
     count: int = Field(ge=0)
 
 
+class GenerateRequest(BaseModel):
+    """Request one non-streaming response from a local model."""
+
+    model_name: str = Field(min_length=1, max_length=255)
+    prompt: str = Field(min_length=1)
+    thinking: bool = False
+
+
+class GenerateResponse(BaseModel):
+    """Return a generated answer and the model execution time."""
+
+    answer: str
+    time_elapsed_ms: int = Field(ge=0)
+
+
 class CpuInfo(BaseModel):
     """Describe the CPU resources visible to the service."""
 

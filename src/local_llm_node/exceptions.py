@@ -3,3 +3,7 @@
 
 class BackendUnavailableError(RuntimeError):
     """Raised when an inference backend cannot serve a request."""
+
+
+class ModelNotFoundError(RuntimeError):
+    """Raised when a requested model is not available in the backend."""

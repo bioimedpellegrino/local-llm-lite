@@ -17,6 +17,7 @@ def create_app(
     backend = inference_backend or OllamaBackend(
         base_url=application_settings.ollama_url,
         timeout_seconds=application_settings.ollama_timeout_seconds,
+        generate_timeout_seconds=application_settings.ollama_generate_timeout_seconds,
     )
 
     application = FastAPI(

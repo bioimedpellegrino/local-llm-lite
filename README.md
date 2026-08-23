@@ -11,6 +11,7 @@ backend and three typed endpoints:
 GET /health
 GET /model_list
 GET /machine_info
+POST /generate
 ```
 
 Prepare the project and start the CPU-compatible base stack:
@@ -93,6 +94,31 @@ HTTP `503` if the backend is unavailable:
   "count": 0
 }
 ```
+
+`POST /generate` sends one prompt to a model listed by `/model_list`. It is
+non-streaming and deliberately keeps the request small:
+
+```json
+{
+  "model_name": "gemma3:1b",
+  "prompt": "Spiega la fotosintesi in due frasi.",
+  "thinking": false
+}
+```
+
+`thinking` defaults to `false`. When the selected model supports it, setting it
+to `true` enables backend reasoning but does not expose its trace in the API
+response:
+
+```json
+{
+  "answer": "La fotosintesi converte luce, acqua e anidride carbonica in glucosio e ossigeno. Le piante usano il glucosio come fonte di energia.",
+  "time_elapsed_ms": 245
+}
+```
+
+`time_elapsed_ms` is the total model execution time reported by Ollama, in
+milliseconds; it includes any model loading needed for the request.
 
 `GET /machine_info` returns the operating system, CPU, RAM and the NVIDIA GPUs
 visible to the API process. GPU discovery uses `nvidia-smi`; the base CPU stack
